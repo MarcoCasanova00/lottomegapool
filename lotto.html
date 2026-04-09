@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lotto Optimizer 2+8 – Standalone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Design di base, ispirato a una UI pulita stile tool da terminale ma in versione web */
+    :root {
+      --bg: #0b1020;
+      --bg-soft: #13182b;
+      --bg-softer: #191f35;
+      --accent: #00d8b4;
+      --accent-soft: rgba(0, 216, 180, 0.18);
+      --accent-strong: #09f0c4;
+      --danger: #ff4b6a;
+      --warning: #ffb347;
+      --text: #f5f7ff;
+      --text-muted: #9ca3c7;
+      --border: #252c45;
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.55);
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #16223d 0, #050712 55%, #02030a 100%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-6) var(--space-3);
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1120px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.0));
+      border-radius: 24px;
+      border: 1px solid rgba(93, 114, 219, 0.25);
+      box-shadow: var(--shadow-soft);
+      padding: var(--space-6);
+      backdrop-filter: blur(20px);
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-4);
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 1.4rem + 1vw, 2.1rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent-strong);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: rgba(0, 216, 180, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(0, 216, 180, 0.4);
+    }
+
+    .badge span.dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent-strong);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.8fr);
+      gap: var(--space-6);
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .panel {
+      background: radial-gradient(circle at top left, #1f2943 0, #070913 58%);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: var(--space-4);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .panel + .panel {
+      margin-top: var(--space-3);
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-3);
+      color: var(--text-muted);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: var(--space-3);
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    label span.hint {
+      font-size: 0.75rem;
+      color: rgba(203, 213, 255, 0.8);
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      background: rgba(10, 14, 35, 0.95);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      padding: 9px 11px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 140ms ease-out, box-shadow 140ms ease-out,
+        transform 140ms ease-out, background 140ms ease-out;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(0, 216, 180, 0.35);
+      background: radial-gradient(circle at top left, rgba(0, 216, 180, 0.06), #050716);
+      transform: translateY(-1px);
+    }
+
+    input::placeholder {
+      color: rgba(148, 163, 210, 0.6);
+    }
+
+    .inline-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
+    }
+
+    @media (max-width: 520px) {
+      .inline-fields {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .rules-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .chip {
+      font-size: 0.72rem;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 210, 0.45);
+      color: rgba(199, 210, 254, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .chip strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      margin-top: var(--space-3);
+    }
+
+    button {
+      border-radius: 999px;
+      border: 0;
+      padding: 9px 18px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 140ms ease-out, box-shadow 140ms ease-out,
+        background 140ms ease-out, color 140ms ease-out;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #041214;
+      box-shadow: 0 12px 28px rgba(0, 216, 180, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(0, 216, 180, 0.5);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(15, 23, 42, 0.9);
+      transform: translateY(-1px);
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.8);
+    }
+
+    .btn-icon {
+      font-size: 1rem;
+    }
+
+    .status-bar {
+      margin-top: var(--space-3);
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px dashed rgba(129, 140, 248, 0.4);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      border: 1px solid rgba(148, 163, 210, 0.6);
+      background: rgba(17, 24, 39, 0.9);
+    }
+
+    .status-pill span.bullet {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
+
+    .results-header h2 {
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .results-summary {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: var(--space-3);
+      font-size: 0.75rem;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 210, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+    }
+
+    .legend-dot.good {
+      background: var(--accent);
+    }
+
+    .legend-dot.medium {
+      background: var(--warning);
+    }
+
+    .legend-dot.bad {
+      background: var(--danger);
+    }
+
+    .results-container {
+      max-height: 460px;
+      overflow: auto;
+      padding-right: 4px;
+      margin-top: var(--space-2);
+    }
+
+    .ticket {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: var(--space-2);
+      align-items: center;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: radial-gradient(circle at left, rgba(0, 216, 180, 0.08), #020617);
+      font-size: 0.83rem;
+    }
+
+    .ticket.good {
+      border-color: rgba(0, 216, 180, 0.8);
+      background: radial-gradient(circle at left, rgba(0, 216, 180, 0.2), #020617);
+      box-shadow: 0 10px 24px rgba(0, 216, 180, 0.35);
+    }
+
+    .ticket.medium {
+      border-color: rgba(250, 204, 21, 0.9);
+      background: radial-gradient(circle at left, rgba(250, 204, 21, 0.16), #020617);
+    }
+
+    .ticket.bad {
+      border-color: rgba(148, 163, 184, 0.8);
+      opacity: 0.8;
+    }
+
+    .ticket-index {
+      font-size: 0.8rem;
+      color: rgba(148, 163, 210, 0.8);
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+
+    .ticket-numbers {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+    }
+
+    .ticket-meta {
+      text-align: right;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .ticket-meta span.highlight {
+      color: var(--accent);
+    }
+
+    .ticket-meta span.warn {
+      color: var(--warning);
+    }
+
+    .ticket-meta span.badge-mini {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      padding: 1px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.8);
+      color: rgba(191, 219, 254, 0.95);
+    }
+
+    .ticket-meta span.badge-mini strong {
+      color: var(--accent);
+    }
+
+    .no-results {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding: 10px;
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px dashed rgba(75, 85, 99, 0.9);
+    }
+
+    footer {
+      width: 100%;
+      max-width: 1120px;
+      margin-top: var(--space-4);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <div class="title-block">
+        <h1>LOTTO OPTIMIZER 2+8</h1>
+        <p class="subtitle">
+          Generatore di sistema 2 Fissi + 8 Variabili con filtro euristico
+          (<span style="color: var(--accent);">somma 60–95</span>,
+          <span style="color: var(--accent);">pari/dispari 3:2</span>,
+          <span style="color: var(--accent);">numeri di Fibonacci</span>).
+        </p>
+      </div>
+      <div>
+        <div class="badge">
+          <span class="dot"></span>
+          <span>CLI → Web · Sistema 56 colonne</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Pannello input -->
+      <section class="panel">
+        <div class="panel-title">Configurazione sistema 2 fissi + 8 variabili</div>
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="fissi">
+              Numeri FISSI (2)
+              <span class="hint">es: 10 21</span>
+            </label>
+            <input
+              id="fissi"
+              type="text"
+              autocomplete="off"
+              placeholder="Inserisci esattamente 2 numeri separati da spazio"
+            />
+          </div>
+
+          <div class="field-group">
+            <label for="variabili">
+              Numeri VARIABILI (8)
+              <span class="hint">es: 3 7 12 16 18 24 27 30</span>
+            </label>
+            <input
+              id="variabili"
+              type="text"
+              autocomplete="off"
+              placeholder="Inserisci esattamente 8 numeri separati da spazio"
+            />
+          </div>
+
+          <div class="inline-fields">
+            <div class="field-group">
+              <label for="bonus">
+                Numero Bonus
+                <span class="hint">1–12 (facoltativo)</span>
+              </label>
+              <input
+                id="bonus"
+                type="number"
+                min="1"
+                max="90"
+                placeholder="es: 7"
+              />
+            </div>
+            <div class="field-group">
+              <label for="ruota">
+                Ruota (facoltativa)
+                <span class="hint">es: Napoli</span>
+              </label>
+              <input
+                id="ruota"
+                type="text"
+                autocomplete="off"
+                placeholder="Nome ruota o 'Tutte'"
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>
+              Regole euristiche applicate
+            </label>
+            <div class="rules-chip-row">
+              <span class="chip">
+                <strong>Somma 60–95</strong> · fascia centrale più usata
+              </span>
+              <span class="chip">
+                <strong>Pari/Dispari 3:2</strong> · equilibrio statistico
+              </span>
+              <span class="chip">
+                <strong>Fibonacci</strong> · numeri 1,2,3,5,8,13,21,34,55,89
+              </span>
+            </div>
+          </div>
+
+          <div id="errorBox" class="error" aria-live="polite"></div>
+
+          <div class="btn-row">
+            <button id="btnGenerate" class="btn-primary">
+              <span class="btn-icon">🎲</span>
+              <span>Genera Sistema (56)</span>
+            </button>
+            <button id="btnExport" class="btn-ghost">
+              <span class="btn-icon">📄</span>
+              <span>Esporta TXT</span>
+            </button>
+            <button id="btnReset" class="btn-ghost">
+              <span class="btn-icon">♻️</span>
+              <span>Reset</span>
+            </button>
+          </div>
+
+          <div class="status-bar">
+            <div>
+              Stato: <span id="statusText">In attesa di generazione…</span>
+            </div>
+            <div>
+              <span class="status-pill">
+                <span class="bullet"></span>
+                <span id="statusCounts">0 valide · 0 parziali · 0 fuori regole</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pannello risultati -->
+      <section class="panel">
+        <div class="results-header">
+          <h2>Schedine generate</h2>
+          <div class="results-summary">
+            Totale combinazioni teoriche: <strong>56</strong> (C(8,3))
+          </div>
+        </div>
+
+        <div class="legend">
+          <span><span class="legend-dot good"></span> Combinazione “a regola d’arte” (somma 60–95, 3:2 pari/dispari, ≥2 Fibonacci)</span>
+          <span><span class="legend-dot medium"></span> Combinazione parzialmente in regola (rispetta almeno 2 criteri)</span>
+          <span><span class="legend-dot bad"></span> Solo combinazione matematica (nessun criterio pienamente rispettato)</span>
+        </div>
+
+        <div id="results" class="results-container">
+          <div class="no-results">
+            Nessuna schedina ancora generata. Inserisci i numeri e premi
+            <strong>“Genera Sistema”</strong>.
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <p>
+      Nota: questo tool applica criteri euristici diffusi tra i giocatori (somma,
+      pari/dispari, Fibonacci) ma non altera le probabilità reali del gioco.
+      Usalo come supporto di studio, non come garanzia di vincita.
+    </p>
+  </footer>
+
+  <script>
+    (function () {
+      const fissiInput = document.getElementById("fissi");
+      const variabiliInput = document.getElementById("variabili");
+      const bonusInput = document.getElementById("bonus");
+      const ruotaInput = document.getElementById("ruota");
+      const errorBox = document.getElementById("errorBox");
+      const statusText = document.getElementById("statusText");
+      const statusCounts = document.getElementById("statusCounts");
+      const resultsContainer = document.getElementById("results");
+      const btnGenerate = document.getElementById("btnGenerate");
+      const btnExport = document.getElementById("btnExport");
+      const btnReset = document.getElementById("btnReset");
+
+      // Numeri Fibonacci usati spesso per metodi "a sezione aurea" nel lotto
+      const fibonacciSet = new Set([1, 2, 3, 5, 8, 13, 21, 34, 55, 89]);
+
+      let currentTickets = []; // struttura dati per export
+
+      function parseNumbers(str, expectedCount, label) {
+        const clean = (str || "")
+          .trim()
+          .replace(/,/g, " ")
+          .replace(/\s+/g, " ");
+        if (!clean) {
+          throw new Error(`Inserisci i numeri per il campo "${label}".`);
+        }
+        const parts = clean.split(" ");
+        if (parts.length !== expectedCount) {
+          throw new Error(`Il campo "${label}" deve contenere esattamente ${expectedCount} numeri.`);
+        }
+        const nums = parts.map((p) => {
+          const n = Number(p);
+          if (!Number.isInteger(n) || n < 1 || n > 90) {
+            throw new Error(
+              `Tutti i numeri in "${label}" devono essere interi tra 1 e 90.`
+            );
+          }
+          return n;
+        });
+        const unique = new Set(nums);
+        if (unique.size !== nums.length) {
+          throw new Error(`I numeri in "${label}" devono essere tutti diversi.`);
+        }
+        return nums;
+      }
+
+      function validateAll(fissi, variabili) {
+        const all = new Set([...fissi, ...variabili]);
+        if (all.size !== fissi.length + variabili.length) {
+          throw new Error("Fissi e variabili devono essere tutti diversi tra loro (10 numeri unici).");
+        }
+      }
+
+      function combinations3(arr) {
+        const combs = [];
+        const n = arr.length;
+        for (let i = 0; i < n - 2; i++) {
+          for (let j = i + 1; j < n - 1; j++) {
+            for (let k = j + 1; k < n; k++) {
+              combs.push([arr[i], arr[j], arr[k]]);
+            }
+          }
+        }
+        return combs;
+      }
+
+      function classifyTicket(nums) {
+        const sum = nums.reduce((a, b) => a + b, 0);
+        let even = 0;
+        for (const n of nums) {
+          if (n % 2 === 0) even++;
+        }
+        const odd = nums.length - even;
+        const isParityBalanced =
+          (even === 2 && odd === 3) || (even === 3 && odd === 2);
+
+        const isSumInRange = sum >= 60 && sum <= 95;
+
+        let fibCount = 0;
+        for (const n of nums) {
+          if (fibonacciSet.has(n)) fibCount++;
+        }
+        const hasGoldenDistribution = fibCount >= 2;
+
+        let score = 0;
+        if (isSumInRange) score++;
+        if (isParityBalanced) score++;
+        if (hasGoldenDistribution) score++;
+
+        let classification = "bad";
+        if (score === 3) classification = "good";
+        else if (score === 2) classification = "medium";
+
+        return {
+          sum,
+          even,
+          odd,
+          fibCount,
+          isSumInRange,
+          isParityBalanced,
+          hasGoldenDistribution,
+          classification,
+        };
+      }
+
+      function formatTicketLine(index, nums, bonus, ruota, meta) {
+        const sorted = [...nums].sort((a, b) => a - b);
+        const numbersStr = sorted.map((n) => String(n).padStart(2, "0")).join(" - ");
+        const bonusLabel = bonus ? ` [Bonus: ${bonus}]` : "";
+        const ruotaLabel = ruota ? ` [Ruota: ${ruota}]` : "";
+        const base = `Schedina ${String(index).padStart(2, "0")}: ${numbersStr}${bonusLabel}${ruotaLabel}`;
+        const tagParts = [];
+        if (meta.isSumInRange) tagParts.push("Σ 60–95");
+        if (meta.isParityBalanced) tagParts.push("P/D 3:2");
+        if (meta.hasGoldenDistribution) tagParts.push("Φ (Fibonacci)");
+        const tagStr = tagParts.length ? ` | ${tagParts.join(" · ")}` : "";
+        return base + tagStr;
+      }
+
+      function renderTickets(fissi, variabili, bonus, ruota) {
+        const combs = combinations3(variabili);
+        currentTickets = [];
+        resultsContainer.innerHTML = "";
+
+        let counts = { good: 0, medium: 0, bad: 0 };
+
+        combs.forEach((comb, idx) => {
+          const allNums = [...fissi, ...comb];
+          const meta = classifyTicket(allNums);
+
+          counts[meta.classification]++;
+
+          const ticketDiv = document.createElement("div");
+          ticketDiv.className = `ticket ${meta.classification}`;
+
+          const indexSpan = document.createElement("div");
+          indexSpan.className = "ticket-index";
+          indexSpan.textContent = `#${String(idx + 1).padStart(2, "0")}`;
+
+          const numsDiv = document.createElement("div");
+          numsDiv.className = "ticket-numbers";
+          numsDiv.textContent = allNums
+            .slice()
+            .sort((a, b) => a - b)
+            .map((n) => String(n).padStart(2, "0"))
+            .join("  ");
+
+          const metaDiv = document.createElement("div");
+          metaDiv.className = "ticket-meta";
+
+          const sumLine = document.createElement("span");
+          sumLine.innerHTML = `Σ = <span class="${
+            meta.isSumInRange ? "highlight" : "warn"
+          }">${meta.sum}</span>`;
+
+          const parityLine = document.createElement("span");
+          parityLine.innerHTML = `P/D = <span class="${
+            meta.isParityBalanced ? "highlight" : "warn"
+          }">${meta.even}P / ${meta.odd}D</span>`;
+
+          const fibLine = document.createElement("span");
+          fibLine.innerHTML = `Fibonacci: <span class="${
+            meta.hasGoldenDistribution ? "highlight" : ""
+          }">${meta.fibCount}</span>`;
+
+          const tagsLine = document.createElement("span");
+          tagsLine.className = "badge-mini";
+          let label = "Solo combinatoria";
+          if (meta.classification === "good")
+            label = "Allineata alle regole";
+          else if (meta.classification === "medium")
+            label = "Parzialmente in regola";
+
+          tagsLine.innerHTML = `<strong>${label}</strong>`;
+
+          metaDiv.appendChild(sumLine);
+          metaDiv.appendChild(parityLine);
+          metaDiv.appendChild(fibLine);
+          metaDiv.appendChild(tagsLine);
+
+          ticketDiv.appendChild(indexSpan);
+          ticketDiv.appendChild(numsDiv);
+          ticketDiv.appendChild(metaDiv);
+
+          resultsContainer.appendChild(ticketDiv);
+
+          const line = formatTicketLine(idx + 1, allNums, bonus, ruota, meta);
+          currentTickets.push(line);
+        });
+
+        statusCounts.textContent = `${counts.good} valide · ${counts.medium} parziali · ${counts.bad} fuori regole`;
+        statusText.textContent = "Sistema generato: 56 combinazioni teoriche, classificate per criteri euristici.";
+      }
+
+      function handleGenerate() {
+        errorBox.textContent = "";
+        try {
+          const fissi = parseNumbers(fissiInput.value, 2, "FISSI");
+          const variabili = parseNumbers(variabiliInput.value, 8, "VARIABILI");
+          validateAll(fissi, variabili);
+
+          let bonus = bonusInput.value ? Number(bonusInput.value) : null;
+          if (bonus !== null) {
+            if (!Number.isInteger(bonus) || bonus < 1 || bonus > 90) {
+              throw new Error("Il numero Bonus deve essere un intero tra 1 e 90.");
+            }
+          }
+
+          const ruota = ruotaInput.value.trim();
+
+          statusText.textContent = "Generazione in corso…";
+          renderTickets(fissi, variabili, bonus, ruota);
+        } catch (err) {
+          errorBox.textContent = err.message || String(err);
+          statusText.textContent = "Errore di validazione. Correggi i dati e riprova.";
+          resultsContainer.innerHTML =
+            '<div class="no-results">Nessuna schedina generata a causa di un errore di input.</div>';
+          currentTickets = [];
+          statusCounts.textContent = "0 valide · 0 parziali · 0 fuori regole";
+        }
+      }
+
+      function handleExport() {
+        if (!currentTickets.length) {
+          errorBox.textContent =
+            "Genera prima il sistema, poi potrai esportare il file TXT.";
+          return;
+        }
+        const headerLines = [];
+        headerLines.push("SISTEMA OTTIMIZZATO 2 FISSI + 8 VARIABILI");
+        headerLines.push("");
+        headerLines.push(
+          `Fissi: ${fissiInput.value.trim()} | Bonus: ${
+            bonusInput.value || "-"
+          } | Ruota: ${ruotaInput.value.trim() || "-"}`
+        );
+        headerLines.push("");
+        const content = headerLines.concat(currentTickets).join("\n");
+
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const now = new Date();
+        const stamp =
+          now.getFullYear().toString() +
+          String(now.getMonth() + 1).padStart(2, "0") +
+          String(now.getDate()).padStart(2, "0") +
+          "_" +
+          String(now.getHours()).padStart(2, "0") +
+          String(now.getMinutes()).padStart(2, "0");
+        a.href = url;
+        a.download = `sistema_lotto_2plus8_${stamp}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function handleReset() {
+        fissiInput.value = "";
+        variabiliInput.value = "";
+        bonusInput.value = "";
+        ruotaInput.value = "";
+        errorBox.textContent = "";
+        currentTickets = [];
+        statusText.textContent = "In attesa di generazione…";
+        statusCounts.textContent = "0 valide · 0 parziali · 0 fuori regole";
+        resultsContainer.innerHTML =
+          '<div class="no-results">Nessuna schedina ancora generata. Inserisci i numeri e premi <strong>“Genera Sistema”</strong>.</div>';
+      }
+
+      btnGenerate.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleGenerate();
+      });
+
+      btnExport.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleExport();
+      });
+
+      btnReset.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleReset();
+      });
+
+      // invio rapido sulla textarea variabili
+      variabiliInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          handleGenerate();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
